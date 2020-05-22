@@ -1,0 +1,67 @@
+version: "3.7"
+
+services:
+
+  mysql:
+    image: mysql:${MYSQL_TAG}
+    command: ${MYSQL_COMMAND}
+    environment:
+      TZ: $TZ
+      MYSQL_ROOT_PASSWORD: $MYSQL_PASSWORD
+    ports:
+      - 4417:3306
+    restart: always
+    volumes:
+      - $DATA_DIR/mysql:/var/lib/mysql
+      - ./initdata:/docker-entrypoint-initdb.d
+
+  eureka:
+    build: ./hero-story-backend/hero-book-registry
+    image: hero-story/eureka:latest
+    restart: always
+    ports:
+      - "5000:5000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  ui:
+    build:
+      context: ./hero-story-ui
+    image: hero-story/ui:latest
+    restart: always
+    environment:
+      - "GATEWAY=$GATEWAY"
+    command:  /bin/bash -c "envsubst < /etc/nginx/conf.d/upstream.template > /etc/nginx/conf.d/upstream.conf && exec nginx -g 'daemon off;'"
+    ports:
+      - "80:80"
+    depends_on:
+      - "gateway"
+
+  gateway:
+    build:
+      context: ./hero-story-backend/hero-book-gateway
+    image: hero-story/gateway:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - "eureka"
+
+  core:
+    build:
+      context: ./hero-story-backend/hero-book-core
+    image: hero-story/core:latest
+    restart: always
+    environment:
+      - "MYSQL_HOST=$MYSQL_HOST"
+      - "MYSQL_PORT=$MYSQL_PORT"
+      - "MYSQL_USER=$MYSQL_USER"
+      - "MYSQL_PASSWORD=$MYSQL_PASSWORD"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "eureka"
+      - "mysql"
