@@ -1,0 +1,6 @@
+[submodule "hero-story-backend"]
+	path = hero-story-backend
+	url = git@github.com:vickerx/hero-book-backend.git
+[submodule "hero-story-ui"]
+	path = hero-story-ui
+	url = git@github.com:vickerx/hero-book-ui.git
